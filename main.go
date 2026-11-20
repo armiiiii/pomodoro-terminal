@@ -55,8 +55,13 @@ func countdown(ctx context.Context, label string, d time.Duration) bool {
 	}
 }
 
+func randomMoji(emojisArray []string) string {
+	return emojisArray[rand.IntN(len(emojisArray))]
+}
+
 func main() {
 
+	// Setting up logger
 	logger, closeLogger, err := logger.New(true)
 
 	if err != nil {
@@ -71,8 +76,10 @@ func main() {
 		"arch", runtime.GOARCH,
 	))
 
+	// Notify configuration
 	beeep.AppName = "Pomodoro"
 
+	// Don't understand what happens here
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
@@ -92,8 +99,17 @@ func main() {
 		"relax duration", cfg.RelaxTime,
 		"iterations", cfg.Iterations)
 
+	// Starting up countdowns
 	for i := 1; i <= int(cfg.Iterations); i++ {
-		label := fmt.Sprintf("%s Work [%d/%d]", randWorkEmojis[rand.IntN(len(randWorkEmojis))], i, cfg.Iterations)
+
+		if i != 1 {
+			notifications.Notify("ВРЕМЯ РАБОТАТЬ")
+			notifications.PlaySound()
+		}
+
+		label := fmt.Sprintf(
+			"%s Work [%d/%d]",
+			randomMoji(randWorkEmojis), i, cfg.Iterations)
 		if !countdown(
 			ctx,
 			label,
@@ -105,7 +121,9 @@ func main() {
 		notifications.PlaySound()
 
 		if i < int(cfg.Iterations) {
-			label := fmt.Sprintf("%s Relax [%d/%d]", randRelaxEmojis[rand.IntN(len(randRelaxEmojis))], i, cfg.Iterations)
+			label := fmt.Sprintf(
+				"%s Relax [%d/%d]",
+				randomMoji(randRelaxEmojis), i, cfg.Iterations)
 			if !countdown(ctx, label, time.Duration(cfg.RelaxTime)*time.Minute) {
 				return
 			}
