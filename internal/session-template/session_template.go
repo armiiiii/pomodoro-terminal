@@ -2,6 +2,7 @@ package sessiontemplate
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 )
@@ -12,9 +13,29 @@ type Block struct {
 	icon  string
 }
 
+func (b Block) GetTitle() string {
+	return b.title
+}
+
+func (b Block) GetDuration() time.Duration {
+	return b.d
+}
+
+func (b Block) GetIcon() string {
+	return b.icon
+}
+
 type SessionTemplate struct {
 	title  string
 	blocks []Block
+}
+
+func (s SessionTemplate) GetTitle() string {
+	return s.title
+}
+
+func (s SessionTemplate) GetBlocks() []Block {
+	return slices.Clone(s.blocks)
 }
 
 func CreateBlock(title string, d time.Duration, icon string) (Block, error) {
