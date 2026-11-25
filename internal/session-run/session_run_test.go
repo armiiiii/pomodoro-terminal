@@ -4,6 +4,7 @@ import (
 	"errors"
 	sessiontemplate "pomodoro/internal/session-template"
 	"pomodoro/internal/testfixtures"
+	"reflect"
 	"testing"
 )
 
@@ -35,7 +36,6 @@ func confirmAllBlocks(
 }
 
 func TestCreateSessionRun_ActiveBlockIsFirstInBlocks(t *testing.T) {
-
 	session, sessionTemplate := initializeSession(t)
 
 	want := sessionTemplate.GetBlocks()[0]
@@ -88,7 +88,6 @@ func TestGetActiveBlock_AfterSessionEnded(t *testing.T) {
 	if !errors.Is(err, ErrSessionEnded) {
 		t.Errorf("GetActiveBlock() = %v, want %v", err, ErrSessionEnded)
 	}
-
 }
 
 func TestConfirmBlock_RejectsAfterLastBlock(t *testing.T) {
@@ -99,5 +98,68 @@ func TestConfirmBlock_RejectsAfterLastBlock(t *testing.T) {
 
 	if !errors.Is(err, ErrSessionEnded) {
 		t.Errorf("ConfirmBlock() = %v, want %v", err, ErrSessionEnded)
+	}
+}
+
+func TestSkipBlock_ActivatesNextBlock(t *testing.T) {
+	session, sessionTemplate := initializeSession(t)
+
+	session.SkipBlock()
+
+	got, err := session.GetActiveBlock()
+	want := sessionTemplate.GetBlocks()[1]
+	if err != nil {
+		t.Fatalf("GetActiveBlock() = %v. returned error to quickly", err)
+	}
+
+	if got != want {
+		t.Errorf("SkipBlock() = %v, want %v", got, want)
+	}
+}
+
+func TestSkipBlock_SavedToStats(t *testing.T) {
+	session, sessionTemplate := initializeSession(t)
+
+	session.SkipBlock()
+
+	got := session.GetStats()
+	want := SessionStatistics{
+		skippedBlocks: []sessiontemplate.Block{sessionTemplate.GetBlocks()[0]},
+	}
+
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("SkipBlock() = %v, want %v", got, want)
+	}
+}
+
+func TestSkipBlock_LastBlockEndsSession(t *testing.T) {
+	session, sessionTemplate := initializeSession(t)
+
+	for range sessionTemplate.GetBlocks() {
+		err := session.SkipBlock()
+		if err != nil {
+			t.Fatalf("SkipBlock() returned error earlier than expected")
+		}
+	}
+
+	if !session.IsEnded() {
+		t.Errorf("SkipBlock() expected to end the session")
+	}
+
+}
+
+func TestSkipBlock_RejectsSkippingAfterLastBlock(t *testing.T) {
+	session, sessionTemplate := initializeSession(t)
+
+	for range sessionTemplate.GetBlocks() {
+		err := session.SkipBlock()
+		if err != nil {
+			t.Fatalf("SkipBlock() returned error earlier than expected")
+		}
+	}
+
+	err := session.SkipBlock()
+	if !errors.Is(err, ErrSessionEnded) {
+		t.Errorf("SkipBlock() = %v, expected %v", err, ErrSessionEnded)
 	}
 }

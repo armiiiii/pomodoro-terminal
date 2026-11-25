@@ -6,10 +6,15 @@ import (
 )
 
 var (
-	ErrSessionEnded = errors.New("session alreay ende")
+	ErrSessionEnded = errors.New("session already ended")
 )
 
+type SessionStatistics struct {
+	skippedBlocks []sessiontemplate.Block
+}
+
 type SessionRun struct {
+	stats       SessionStatistics
 	blocks      []sessiontemplate.Block
 	activeIndex int
 	ended       bool
@@ -34,11 +39,26 @@ func (s *SessionRun) GetActiveBlock() (sessiontemplate.Block, error) {
 }
 
 func (s *SessionRun) ConfirmBlock() error {
-
 	if s.ended {
 		return ErrSessionEnded
 	}
 
+	if s.isLastBlock() {
+		s.ended = true
+		return nil
+	}
+
+	s.activeIndex++
+	return nil
+}
+
+func (s *SessionRun) SkipBlock() error {
+	block, err := s.GetActiveBlock()
+	if err != nil {
+		return ErrSessionEnded
+	}
+
+	s.stats.skippedBlocks = append(s.stats.skippedBlocks, block)
 	if s.isLastBlock() {
 		s.ended = true
 		return nil
@@ -49,4 +69,8 @@ func (s *SessionRun) ConfirmBlock() error {
 
 func (s *SessionRun) IsEnded() bool {
 	return s.ended
+}
+
+func (s *SessionRun) GetStats() SessionStatistics {
+	return s.stats
 }
