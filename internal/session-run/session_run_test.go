@@ -35,6 +35,20 @@ func confirmAllBlocks(
 	}
 }
 
+func skipAllBlocks(
+	t *testing.T,
+	session *SessionRun,
+	sessionTemplate *sessiontemplate.SessionTemplate,
+) {
+	t.Helper()
+
+	for range sessionTemplate.GetBlocks() {
+		if err := session.SkipBlock(); err != nil {
+			t.Fatalf("SkipBlock() returned error earlier than expected")
+		}
+	}
+}
+
 func TestCreateSessionRun_ActiveBlockIsFirstInBlocks(t *testing.T) {
 	session, sessionTemplate := initializeSession(t)
 
@@ -135,30 +149,19 @@ func TestSkipBlock_SavedToStats(t *testing.T) {
 func TestSkipBlock_LastBlockEndsSession(t *testing.T) {
 	session, sessionTemplate := initializeSession(t)
 
-	for range sessionTemplate.GetBlocks() {
-		err := session.SkipBlock()
-		if err != nil {
-			t.Fatalf("SkipBlock() returned error earlier than expected")
-		}
-	}
+	skipAllBlocks(t, &session, &sessionTemplate)
 
 	if !session.IsEnded() {
 		t.Errorf("SkipBlock() expected to end the session")
 	}
-
 }
 
 func TestSkipBlock_RejectsSkippingAfterLastBlock(t *testing.T) {
 	session, sessionTemplate := initializeSession(t)
-
-	for range sessionTemplate.GetBlocks() {
-		err := session.SkipBlock()
-		if err != nil {
-			t.Fatalf("SkipBlock() returned error earlier than expected")
-		}
-	}
+	skipAllBlocks(t, &session, &sessionTemplate)
 
 	err := session.SkipBlock()
+
 	if !errors.Is(err, ErrSessionEnded) {
 		t.Errorf("SkipBlock() = %v, expected %v", err, ErrSessionEnded)
 	}

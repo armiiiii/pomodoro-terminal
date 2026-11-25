@@ -27,28 +27,13 @@ func CreateSessionRun(sessionTemplate sessiontemplate.SessionTemplate) (SessionR
 	}, nil
 }
 
-func (s *SessionRun) isLastBlock() bool {
-	return s.activeIndex >= len(s.blocks)-1
-}
-
-func (s *SessionRun) GetActiveBlock() (sessiontemplate.Block, error) {
-	if s.ended {
-		return sessiontemplate.Block{}, ErrSessionEnded
-	}
-	return s.blocks[s.activeIndex], nil
-}
-
 func (s *SessionRun) ConfirmBlock() error {
 	if s.ended {
 		return ErrSessionEnded
 	}
 
-	if s.isLastBlock() {
-		s.ended = true
-		return nil
-	}
+	s.advanceBlocks()
 
-	s.activeIndex++
 	return nil
 }
 
@@ -59,12 +44,29 @@ func (s *SessionRun) SkipBlock() error {
 	}
 
 	s.stats.skippedBlocks = append(s.stats.skippedBlocks, block)
+
+	s.advanceBlocks()
+
+	return nil
+}
+
+func (s *SessionRun) GetActiveBlock() (sessiontemplate.Block, error) {
+	if s.ended {
+		return sessiontemplate.Block{}, ErrSessionEnded
+	}
+	return s.blocks[s.activeIndex], nil
+}
+
+func (s *SessionRun) advanceBlocks() {
 	if s.isLastBlock() {
 		s.ended = true
-		return nil
+		return
 	}
 	s.activeIndex++
-	return nil
+}
+
+func (s *SessionRun) isLastBlock() bool {
+	return s.activeIndex >= len(s.blocks)-1
 }
 
 func (s *SessionRun) IsEnded() bool {
