@@ -3,6 +3,7 @@ package sessionrun
 import (
 	"errors"
 	sessiontemplate "pomodoro/internal/session-template"
+	"time"
 )
 
 var (
@@ -14,17 +15,48 @@ type SessionStatistics struct {
 }
 
 type SessionRun struct {
-	stats       SessionStatistics
-	blocks      []sessiontemplate.Block
-	activeIndex int
-	ended       bool
+	blocks         []sessiontemplate.Block
+	blockStartTime time.Time
+	pauseStartTime time.Time
+	activeIndex    int
+	ended          bool
+	stats          SessionStatistics
 }
 
 func CreateSessionRun(sessionTemplate sessiontemplate.SessionTemplate) (SessionRun, error) {
-	return SessionRun{
+	var sessionRun SessionRun = SessionRun{
 		activeIndex: 0,
 		blocks:      sessionTemplate.GetBlocks(),
-	}, nil
+	}
+	return sessionRun, nil
+}
+
+func (s *SessionRun) Start() {
+	s.blockStartTime = time.Now()
+}
+
+func (s *SessionRun) Pause() {
+	s.pauseStartTime = time.Now()
+}
+
+func (s *SessionRun) Resume() {
+	s.blockStartTime = s.blockStartTime.Add(time.Since(s.pauseStartTime))
+	s.pauseStartTime = time.Time{}
+}
+
+func (s *SessionRun) GetRemainingTime() (time.Duration, error) {
+	block, err := s.GetActiveBlock()
+	if err != nil {
+		return 0, err
+	}
+
+	now := time.Now()
+
+	if !s.pauseStartTime.IsZero() {
+		now = s.pauseStartTime
+	}
+
+	return block.GetDuration() - now.Sub(s.blockStartTime), nil
 }
 
 func (s *SessionRun) ConfirmBlock() error {

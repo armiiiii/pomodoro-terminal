@@ -6,6 +6,8 @@ import (
 	"pomodoro/internal/testfixtures"
 	"reflect"
 	"testing"
+	"testing/synctest"
+	"time"
 )
 
 func initializeSession(t *testing.T) (SessionRun, sessiontemplate.SessionTemplate) {
@@ -165,4 +167,83 @@ func TestSkipBlock_RejectsSkippingAfterLastBlock(t *testing.T) {
 	if !errors.Is(err, ErrSessionEnded) {
 		t.Errorf("SkipBlock() = %v, expected %v", err, ErrSessionEnded)
 	}
+}
+
+func TestGetRemainingTime_AfterElapsedTime(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		session, sessionTemplate := initializeSession(t)
+
+		duration := sessionTemplate.GetBlocks()[0].GetDuration()
+
+		session.Start()
+
+		time.Sleep(duration / 2)
+
+		got, err := session.GetRemainingTime()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		want := duration - duration/2
+
+		if got != want {
+			t.Errorf("got %v, want %v", got, want)
+		}
+	})
+}
+
+func TestPause_FreezesRemainingTime(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		session, sessionTemplate := initializeSession(t)
+		duration := sessionTemplate.GetBlocks()[0].GetDuration()
+
+		session.Start()
+
+		time.Sleep(duration / 2)
+
+		session.Pause()
+
+		time.Sleep(duration / 2)
+
+		got, err := session.GetRemainingTime()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		want := duration - duration/2
+
+		if got != want {
+			t.Errorf("got %v, want %v", got, want)
+		}
+	})
+}
+
+func TestResume_UnfreezedRemainingTime(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		session, sessionTemplate := initializeSession(t)
+		duration := sessionTemplate.GetBlocks()[0].GetDuration()
+
+		session.Start()
+
+		time.Sleep(duration / 2)
+
+		session.Pause()
+
+		time.Sleep(duration / 2)
+
+		session.Resume()
+
+		time.Sleep(duration / 4)
+
+		got, err := session.GetRemainingTime()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		want := duration - duration/2 - duration/4
+
+		if got != want {
+			t.Errorf("got %v, want %v", got, want)
+		}
+	})
 }
