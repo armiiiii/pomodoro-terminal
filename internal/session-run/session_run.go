@@ -11,7 +11,8 @@ var (
 )
 
 type SessionStatistics struct {
-	skippedBlocks []sessiontemplate.Block
+	skippedBlocks  []sessiontemplate.Block
+	totalPauseTime time.Duration
 }
 
 type SessionRun struct {
@@ -40,6 +41,7 @@ func (s *SessionRun) Pause() {
 }
 
 func (s *SessionRun) Resume() {
+	s.stats.totalPauseTime += time.Since(s.pauseStartTime)
 	s.blockStartTime = s.blockStartTime.Add(time.Since(s.pauseStartTime))
 	s.pauseStartTime = time.Time{}
 }
