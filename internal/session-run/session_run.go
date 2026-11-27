@@ -106,6 +106,7 @@ func (s *SessionRun) advanceBlocks() {
 		return
 	}
 	s.activeIndex++
+	s.blockStartTime = time.Now()
 }
 
 func (s *SessionRun) isLastBlock() bool {

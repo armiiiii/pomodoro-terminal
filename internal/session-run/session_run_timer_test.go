@@ -71,3 +71,38 @@ func TestGetRemainingTime(t *testing.T) {
 		})
 	}
 }
+
+func TestConfirmBlock_ResetsRemainingTime(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		session, template := initializeSession(t)
+		duration := template.GetBlocks()[0].GetDuration()
+
+		session.Start()
+
+		time.Sleep(duration)
+
+		// User confirms the block
+		if err := session.ConfirmBlock(); err != nil {
+			t.Fatal(err)
+		}
+
+		block, err := session.GetActiveBlock()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		expectedBlock := template.GetBlocks()[1]
+		if block != expectedBlock {
+			t.Errorf("block wasn't confirmed, block %v, expectedBlock %v", block, expectedBlock)
+		}
+
+		got, err := session.GetRemainingTime()
+		if err != nil {
+			t.Fatal(err)
+		}
+		want := expectedBlock.GetDuration()
+		if got != want {
+			t.Errorf("GetRemainingTime()=%v, want %v", got, want)
+		}
+	})
+}
