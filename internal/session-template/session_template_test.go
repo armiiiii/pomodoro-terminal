@@ -4,6 +4,8 @@ import (
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 func TestCreateBlock(t *testing.T) {
@@ -122,8 +124,16 @@ func TestCreateSessionTemplate(t *testing.T) {
 				return
 			}
 
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("CreateSessionTemplate() = %v, want %v", got, tt.want)
+			if got.ID() == uuid.Nil {
+				t.Error("CreateSessionTemplate() returned a zero UUID")
+			}
+
+			if got.GetTitle() != tt.want.GetTitle() {
+				t.Errorf("title = %q, want %q", got.GetTitle(), tt.want.GetTitle())
+			}
+
+			if !reflect.DeepEqual(got.GetBlocks(), tt.want.GetBlocks()) {
+				t.Errorf("blocks = %v, want %v", got.GetBlocks(), tt.want.GetBlocks())
 			}
 		})
 	}

@@ -4,6 +4,8 @@ import (
 	"errors"
 	sessiontemplate "pomodoro/internal/session-template"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 var (
@@ -16,6 +18,7 @@ type SessionStatistics struct {
 }
 
 type SessionRun struct {
+	id             uuid.UUID
 	blocks         []sessiontemplate.Block
 	blockStartTime time.Time
 	pauseStartTime time.Time
@@ -25,7 +28,13 @@ type SessionRun struct {
 }
 
 func CreateSessionRun(sessionTemplate sessiontemplate.SessionTemplate) (SessionRun, error) {
+	id, err := uuid.NewRandom()
+	if err != nil {
+		return SessionRun{}, err
+	}
+
 	var sessionRun SessionRun = SessionRun{
+		id:          id,
 		activeIndex: 0,
 		blocks:      sessionTemplate.GetBlocks(),
 	}
